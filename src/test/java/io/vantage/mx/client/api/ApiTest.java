@@ -30,12 +30,12 @@ public class ApiTest {
     private static final String xApiKey = "your_api_key";
     private static final String username = "your_username";
     private static final String password = "your_password";
-    private static final String url = "the_url";
+    private static final String urlApi = "the_url";
         
     @Before()
     public void setUp() {
         this.apiClient = api.getApiClient();
-        this.apiClient.setBasePath(url);
+        this.apiClient.setBasePath(urlApi);
         OkHttpClient okHttpClient = new OkHttpClient().newBuilder()
                 .readTimeout(30, TimeUnit.SECONDS)
                 .addInterceptor(new SignerInterceptor())
