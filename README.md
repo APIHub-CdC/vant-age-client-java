@@ -1,4 +1,4 @@
-# vant-age-client-java
+# vantage-client-java
 Es un modelo que segmenta a los clientes morosos en 6 calificaciones, de acuerdo al avance esperado de mora en los siguientes 30 días. Reduce costos de gestión y administración de cartera morosa al segmentar a la población.
 
 ## Requisitos
@@ -137,13 +137,110 @@ key_password=your_super_secure_password
 ```
 ### Paso 5. Modificar URL y datos de petición
 
-En el archivo ApiTest.java, que se encuentra en ***src/test/java/io/va/mx/client/api/***. Por tanto, se deberá modificar la URL (**urlApi**); el usuario (**Username**) y contraseña (**Password**) de autenticación de acceso básica; y la API KEY (**xApiKey**), que se muestra en el siguiente fragmento de código:
+En el archivo ApiTest.java, que se encuentra en **src/test/java/io/vantage/mx/client/api/**. Por tanto, se deberá modificar la URL (**urlApi**); el usuario (**username**) y contraseña (**password**) de autenticación de credenciales de consumo; y la API KEY (**xApiKey**), que se muestra en el siguiente fragmento de código:
 
 
 > **NOTA:** Los datos de la siguiente petición son solo representativos.
 
 ```java
- // TODO
+public class ApiTest {
+
+    private Logger logger = LoggerFactory.getLogger(ApiTest.class.getName());
+    private final VantAgeApi api = new VantAgeApi();
+    private ApiClient apiClient = null;  
+    private static final String xApiKey = "your_api_key";
+    private static final String username = "your_username";
+    private static final String password = "your_password";
+    private static final String urlApi = "the_url";
+        
+    @Before()
+    public void setUp() {
+        //..code
+    }
+
+    @Test
+    public void getVantageAportantesTest() throws ApiException {
+        
+        Integer estatusOK = 200;
+        Integer estatusNoContent = 204;
+        AportantesPeticion peticion = new AportantesPeticion();
+        try {
+            
+            peticion.setFolio("12345");
+            peticion.setFechaProceso("2018-03-25");
+            peticion.setNumeroCuenta("34232343");
+            peticion.setDiasAtraso(10);
+                        
+            ApiResponse<?> response = api.getGenerciVantageAportantesWithHttpInfo(xApiKey, username, password, peticion);
+            
+            Assert.assertTrue(estatusOK.equals(response.getStatusCode()));
+            
+            if(estatusOK.equals(response.getStatusCode())) {
+                Respuesta responseOK = (Respuesta) response.getData();
+                logger.info(responseOK.toString());
+            }
+            
+        }catch (ApiException e) {
+            if(!estatusNoContent.equals(e.getCode())) {
+                logger.info(e.getResponseBody());
+            }
+            Assert.assertTrue(estatusOK.equals(e.getCode()));
+        }        
+    }
+    
+    
+    @Test
+    public void getVantageNoAportantesTest() throws ApiException {
+        
+        Integer estatusOK = 200;
+        Integer estatusNoContent = 204;
+        NoAportantesPeticion peticion = new NoAportantesPeticion();
+        PersonaPeticion persona = new PersonaPeticion();
+        DomicilioPeticion domicilio = new DomicilioPeticion();
+
+        try {
+            
+              domicilio.setDireccion("INSURGENTES SUR 1006");
+              domicilio.setColoniaPoblacion("CENTRO");
+              domicilio.setDelegacionMunicipio("BENITO JUAREZ");
+              domicilio.setCiudad("BENITO JUAREZ");
+              domicilio.setEstado(CatalogoEstados.DF);
+              domicilio.setCP("04480");
+              domicilio.setNumeroTelefono("5409098765");
+
+              persona.setApellidoPaterno("Prueba");
+              persona.setApellidoMaterno("Siete");
+              persona.setPrimerNombre("Juan");
+              persona.setFechaNacimiento("1980-01-07");
+              persona.setRFC("PAMP010101");
+              persona.setNacionalidad("MX");
+              persona.setDomicilio(domicilio);
+
+              peticion.setFolio("12345");
+              peticion.setFechaProceso("2018-03-25");
+              peticion.setTipoContrato(CatalogoContrato.AA);
+              peticion.setFrecuenciaPago(CatalogoFrecuenciaPago.A);
+              peticion.setDiasAtraso(10);
+              peticion.setPersona(persona);           
+                        
+            ApiResponse<?> response = api.getGenericVantageNoAportantesWithHttpInfo(xApiKey, username, password, peticion);
+            
+            Assert.assertTrue(estatusOK.equals(response.getStatusCode()));
+            
+            if(estatusOK.equals(response.getStatusCode())) {
+                Respuesta responseOK = (Respuesta) response.getData();
+                logger.info(responseOK.toString());
+            }
+            
+        }catch (ApiException e) {
+            if(!estatusNoContent.equals(e.getCode())) {
+                logger.info(e.getResponseBody());
+            }
+            Assert.assertTrue(estatusOK.equals(e.getCode()));
+        }         
+    }
+    
+}
 ```
 ### Paso 6. Ejecutar la prueba unitaria
 
