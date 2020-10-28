@@ -1,22 +1,32 @@
-# vantage-client-java
+# vantage-client-java (https://img.shields.io/badge/Maven&nbsp;package-Last&nbsp;version-lemon)](https://github.com/orgs/APIHub-CdC/packages?repo_name=vantage-client-java) 
 Es un modelo que segmenta a los clientes morosos en 6 calificaciones, de acuerdo al avance esperado de mora en los siguientes 30 días. Reduce costos de gestión y administración de cartera morosa al segmentar a la población.
 
 ## Requisitos
 
 1. Java >= 1.7
 2. Maven >= 3.3
+
 ## Instalación
 
-Para la instalación de las dependencias se deberá ejecutar el siguiente comando:
+**Prerrequisito**: obtener token de acceso y configuración de las credenciales de acceso. Consulte el manual **[aquí](https://github.com/APIHub-CdC/maven-github-packages)**.
+
+**Opción 1**: En caso que la configuración se integró en el archivo **settingsAPIHUB.xml** (ubicado en la raíz del proyecto), instale las dependencias con siguiente comando:
+
+```shell
+mvn --settings settingsAPIHUB.xml clean install -Dmaven.test.skip=true
+```
+
+**Opción 2**: Si se integró la configuración en el **settings.xml** del **.m2**, instale las dependencias con siguiente comando:
+
 ```shell
 mvn install -Dmaven.test.skip=true
 ```
+
 ## Guía de inicio
 
 ### Paso 1. Generar llave y certificado
-
 Antes de lanzar la prueba se deberá tener un keystore para la llave privada y el certificado asociado a ésta.
-Para generar el keystore se ejecutan las instrucciones que se encuentran en ***src/main/security/createKeystore.sh*** o con los siguientes comandos:
+Para generar el keystore se ejecutan las instrucciones que se encuentran en ***src/main/security/createKeystore.sh*** ó con los siguientes comandos:
 
 **Opcional**: Si desea cifrar su contenedor, coloque una contraseña en una variable de ambiente.
 
@@ -98,7 +108,6 @@ keytool -list -keystore ${KEYSTORE_FILE} \
 ```
 
 ### Paso 2. Carga del certificado dentro del portal de desarrolladores
-
  1. Iniciar sesión.
  2. Dar clic en la sección "**Mis aplicaciones**".
  3. Seleccionar la aplicación.
@@ -106,13 +115,12 @@ keytool -list -keystore ${KEYSTORE_FILE} \
     <p align="center">
       <img src="https://github.com/APIHub-CdC/imagenes-cdc/blob/master/applications.png">
     </p>
- 5. Al abrirse la ventana, seleccionar el certificado previamente creado y dar clic en el botón "**Cargar**":
+ 5. Al abrirse la ventana emergente, seleccionar el certificado previamente creado y dar clic en el botón "**Cargar**":
     <p align="center">
-      <img src="https://github.com/APIHub-CdC/imagenes-cdc/blob/master/upload_cert.png">
+      <img src="https://github.com/APIHub-CdC/imagenes-cdc/blob/master/upload_cert.png" width="268">
     </p>
-
+ 
 ### Paso 3. Descarga del certificado de Círculo de Crédito dentro del portal de desarrolladores
-
  1. Iniciar sesión.
  2. Dar clic en la sección "**Mis aplicaciones**".
  3. Seleccionar la aplicación.
@@ -120,9 +128,9 @@ keytool -list -keystore ${KEYSTORE_FILE} \
     <p align="center">
         <img src="https://github.com/APIHub-CdC/imagenes-cdc/blob/master/applications.png">
     </p>
- 5. Al abrirse la ventana, dar clic al botón "**Descargar**":
+ 5. Al abrirse la ventana emergente, dar clic al botón "**Descargar**":
     <p align="center">
-        <img src="https://github.com/APIHub-CdC/imagenes-cdc/blob/master/download_cert.png">
+        <img src="https://github.com/APIHub-CdC/imagenes-cdc/blob/master/download_cert.png" width="268">
     </p>
 
 ### Paso 4. Modificar archivo de configuraciones
@@ -135,112 +143,163 @@ keystore_password=your_super_secure_keystore_password
 key_alias=cdc
 key_password=your_super_secure_password
 ```
-### Paso 5. Modificar URL y datos de petición
+### Paso 5. Modificar URL
+En el archivo ApiTest.java, que se encuentra en ***src/test/java/com/cdc/apihub/mx/vantage/test/***. Se deberá modificar los datos de la petición y los datos de consumo:
 
-En el archivo ApiTest.java, que se encuentra en **src/test/java/io/vantage/mx/client/api/**. Por tanto, se deberá modificar la URL (**urlApi**); el usuario (**username**) y contraseña (**password**) de autenticación de credenciales de consumo; y la API KEY (**xApiKey**), que se muestra en el siguiente fragmento de código:
+1. Configurar ubicación y acceso de la llave creado en el **paso 1** y el certificado descargado en el **paso 2**
+   - keystoreFile: ubicacion del archivo keystore.jks
+   - cdcCertFile: ubicacion del archivo cdc_cert.pem
+   - keystorePassword: contraseña de cifrado del keystore
+   - keyAlias: alias asignado al keystore
+   - keyPassword: contraseña de cifrado del contenedor
 
+2. Credenciales de acceso dadas por Círculo de Crédito, obtenidas despues de la afiliación
+   - usernameCDC: usuario de Círculo de Crédito
+   - passwordCDC: contraseña de Círculo de Crédito
+  
+2. Datos de consumo del API
+   - url: URL de la exposicón del API
+   - xApiKey: Ubicada en la aplicación (creada en el **paso 2**) del portal y nombrada como Consumer Key 
 
 > **NOTA:** Los datos de la siguiente petición son solo representativos.
 
 ```java
+package com.cdc.apihub.mx.vantage.test;
+
+...
+
 public class ApiTest {
 
-    private Logger logger = LoggerFactory.getLogger(ApiTest.class.getName());
-    private final VantAgeApi api = new VantAgeApi();
-    private ApiClient apiClient = null;  
-    private static final String xApiKey = "your_api_key";
-    private static final String username = "your_username";
-    private static final String password = "your_password";
-    private static final String urlApi = "the_url";
-        
-    @Before()
-    public void setUp() {
-        //..code
+  private final VantAgeApi api = new VantAgeApi();
+
+  private Logger logger = LoggerFactory.getLogger(ApiTest.class.getName());
+
+  private ApiClient apiClient;
+
+  private String keystoreFile = "your_path_for_your_keystore/keystore.jks";
+  private String cdcCertFile = "your_path_for_certificate_of_cdc/cdc_cert.pem";
+  private String keystorePassword = "your_super_secure_keystore_password";
+  private String keyAlias = "your_key_alias";
+  private String keyPassword = "your_super_secure_password";
+
+  private String usernameCDC = "your_username_otrorgante";
+  private String passwordCDC = "your_password_otorgante";
+
+  private String url = "the_url";
+  private String xApiKey = "your_x_api_key";
+
+  private SignerInterceptor interceptor;
+
+  @Before()
+  public void setUp() {
+    interceptor = new SignerInterceptor(keystoreFile, cdcCertFile, keystorePassword, keyAlias, keyPassword);
+    this.apiClient = api.getApiClient();
+    this.apiClient.setBasePath(url);
+    OkHttpClient okHttpClient = new OkHttpClient().newBuilder().readTimeout(30, TimeUnit.SECONDS)
+        .addInterceptor(interceptor).build();
+    apiClient.setHttpClient(okHttpClient);
+  }
+
+  @Test
+  public void getVantageAportantesTest() throws ApiException {
+
+    AportantesPeticion peticion = new AportantesPeticion();
+
+    Integer estatusOK = 200;
+    Integer estatusNoContent = 204;
+
+    try {
+
+      peticion.setFolio("0000001");
+      peticion.setTipoContrato(CatalogoContrato.TC);
+      peticion.setNumeroCuenta("4772133042201399");
+      peticion.setDiasAtraso(1);
+
+      ApiResponse<?> response = api.getGenericVantageAportantes(xApiKey, usernameCDC, passwordCDC, peticion);
+
+      Assert.assertTrue(estatusOK.equals(response.getStatusCode()));
+
+      if (estatusOK.equals(response.getStatusCode())) {
+        Respuesta responseOK = (Respuesta) response.getData();
+        logger.info("Vantage Aportantes Test: " + responseOK.toString());
+      }
+
+    } catch (ApiException e) {
+
+      if (!estatusNoContent.equals(e.getCode())) {
+        logger.info("getVantageAportantesTest:\n");
+        logger.info("Response received from API: " + interceptor.getErrores().toString());
+        logger.info("Response processed by client:" + e.getResponseBody());
+      } else {
+
+        logger.info("The response was a status 204 (NO CONTENT)");
+      }
+
+      Assert.assertTrue(estatusOK.equals(e.getCode()));
     }
+  }
 
-    @Test
-    public void getVantageAportantesTest() throws ApiException {
-        
-        Integer estatusOK = 200;
-        Integer estatusNoContent = 204;
-        AportantesPeticion peticion = new AportantesPeticion();
-        try {
-            
-            peticion.setFolio("12345");
-            peticion.setFechaProceso("2018-03-25");
-            peticion.setNumeroCuenta("34232343");
-            peticion.setDiasAtraso(10);
-                        
-            ApiResponse<?> response = api.getGenerciVantageAportantesWithHttpInfo(xApiKey, username, password, peticion);
-            
-            Assert.assertTrue(estatusOK.equals(response.getStatusCode()));
-            
-            if(estatusOK.equals(response.getStatusCode())) {
-                Respuesta responseOK = (Respuesta) response.getData();
-                logger.info(responseOK.toString());
-            }
-            
-        }catch (ApiException e) {
-            if(!estatusNoContent.equals(e.getCode())) {
-                logger.info(e.getResponseBody());
-            }
-            Assert.assertTrue(estatusOK.equals(e.getCode()));
-        }        
+  @Test
+  public void getVantageNoAportantesTest() throws ApiException {
+
+    PersonaPeticion persona = new PersonaPeticion();
+    DomicilioPeticion domicilio = new DomicilioPeticion();
+    NoAportantesPeticion request = new NoAportantesPeticion();
+
+    Integer estatusOK = 200;
+    Integer estatusNoContent = 204;
+
+    try {
+
+      domicilio.setDireccion("INSURGENTES SUR 1007");
+      domicilio.setColoniaPoblacion("INSURGENTES");
+      domicilio.setDelegacionMunicipio("BENITO JUAREZ");
+      domicilio.setCiudad("CIUDAD DE MÉXICO");
+      domicilio.setEstado(CatalogoEstados.DF);
+      domicilio.setCP("11230");
+
+      persona.setPrimerNombre("PRUEBA");
+      persona.setApellidoPaterno("SIETE");
+      persona.setApellidoMaterno("JUAN");
+      persona.setFechaNacimiento("1980-01-07");
+      persona.setDomicilio(domicilio);
+
+      request.setFolio("0000002");
+      request.setTipoProducto(CatalogoProducto.O);
+      request.setTipoContrato(CatalogoContrato.TC);
+      request.setFrecuenciaPago(CatalogoFrecuenciaPago.M);
+      request.setDiasAtraso(1);
+      request.setNumeroCuenta("123456");
+      request.setFechaApertura("1990-10-19");
+      request.setSaldoActual(1F);
+      request.setPersona(persona);
+
+      ApiResponse<?> response = api.getGenericVantageNoAportantes(xApiKey, usernameCDC, passwordCDC, request);
+
+      Assert.assertTrue(estatusOK.equals(response.getStatusCode()));
+
+      if (estatusOK.equals(response.getStatusCode())) {
+        Respuesta responseOK = (Respuesta) response.getData();
+        logger.info("Vantage NO Aportantes Test: " + responseOK.toString());
+      }
+
+    } catch (ApiException e) {
+
+      if (!estatusNoContent.equals(e.getCode())) {
+        logger.info("getVantageNoAportantesTest:\n");
+        logger.info("Response received from API: " + interceptor.getErrores().toString());
+        logger.info("Response processed by client:" + e.getResponseBody());
+      } else {
+
+        logger.info("The response was a status 204 (NO CONTENT)");
+      }
+
+      Assert.assertTrue(estatusOK.equals(e.getCode()));
     }
-    
-    
-    @Test
-    public void getVantageNoAportantesTest() throws ApiException {
-        
-        Integer estatusOK = 200;
-        Integer estatusNoContent = 204;
-        NoAportantesPeticion peticion = new NoAportantesPeticion();
-        PersonaPeticion persona = new PersonaPeticion();
-        DomicilioPeticion domicilio = new DomicilioPeticion();
+  }
 
-        try {
-            
-              domicilio.setDireccion("INSURGENTES SUR 1006");
-              domicilio.setColoniaPoblacion("CENTRO");
-              domicilio.setDelegacionMunicipio("BENITO JUAREZ");
-              domicilio.setCiudad("BENITO JUAREZ");
-              domicilio.setEstado(CatalogoEstados.DF);
-              domicilio.setCP("04480");
-              domicilio.setNumeroTelefono("5409098765");
-
-              persona.setApellidoPaterno("Prueba");
-              persona.setApellidoMaterno("Siete");
-              persona.setPrimerNombre("Juan");
-              persona.setFechaNacimiento("1980-01-07");
-              persona.setRFC("PAMP010101");
-              persona.setNacionalidad("MX");
-              persona.setDomicilio(domicilio);
-
-              peticion.setFolio("12345");
-              peticion.setFechaProceso("2018-03-25");
-              peticion.setTipoContrato(CatalogoContrato.AA);
-              peticion.setFrecuenciaPago(CatalogoFrecuenciaPago.A);
-              peticion.setDiasAtraso(10);
-              peticion.setPersona(persona);           
-                        
-            ApiResponse<?> response = api.getGenericVantageNoAportantesWithHttpInfo(xApiKey, username, password, peticion);
-            
-            Assert.assertTrue(estatusOK.equals(response.getStatusCode()));
-            
-            if(estatusOK.equals(response.getStatusCode())) {
-                Respuesta responseOK = (Respuesta) response.getData();
-                logger.info(responseOK.toString());
-            }
-            
-        }catch (ApiException e) {
-            if(!estatusNoContent.equals(e.getCode())) {
-                logger.info(e.getResponseBody());
-            }
-            Assert.assertTrue(estatusOK.equals(e.getCode()));
-        }         
-    }
-    
 }
+
 ```
 ### Paso 6. Ejecutar la prueba unitaria
 
